@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Download, FileText, Table } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { GradeLevel, QualitativeGrade } from '../types';
 import { GRADE_LEVELS, quantitativeToQualitative } from '../utils/storage';
+import { exportGradesPDF, exportGradesExcel } from '../utils/export';
 import { format } from 'date-fns';
 
 const QUALITATIVE_OPTIONS: QualitativeGrade[] = ['Superior', 'Alto', 'Básico', 'Bajo'];
@@ -28,6 +29,8 @@ const Grades: React.FC = () => {
     qualitativeValue: 'Superior' as QualitativeGrade,
     description: '',
   });
+
+  const [showExport, setShowExport] = useState(false);
 
   const students = data.students
     .filter(s => s.gradeLevel === filterGrade)
@@ -65,9 +68,41 @@ const Grades: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Valoraciones</h1>
-        <p className="text-sm text-gray-500">Registro de notas cualitativas y cuantitativas</p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Valoraciones</h1>
+          <p className="text-sm text-gray-500">Registro de notas cualitativas y cuantitativas</p>
+        </div>
+        <div className="relative">
+          <button onClick={() => setShowExport(v => !v)} className="btn-secondary flex items-center gap-2">
+            <Download className="w-4 h-4" /> Exportar
+          </button>
+          {showExport && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowExport(false)} />
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-44 py-1">
+                <button
+                  onClick={() => {
+                    exportGradesPDF(students, data.grades, data.subjects, filterPeriod, filterYear, filterGrade);
+                    setShowExport(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <FileText className="w-4 h-4 text-red-500" /> Exportar PDF
+                </button>
+                <button
+                  onClick={async () => {
+                    await exportGradesExcel(students, data.grades, data.subjects, filterPeriod, filterYear, filterGrade);
+                    setShowExport(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <Table className="w-4 h-4 text-green-600" /> Exportar Excel
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">

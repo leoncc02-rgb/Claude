@@ -3,7 +3,6 @@ import type { AppData, Subject, GradeLevel, QualitativeGrade } from '../types';
 const STORAGE_KEY = 'escuela_app_data';
 
 const DEFAULT_SUBJECTS: Subject[] = [
-  // Prejardín, Jardín, Transición
   { id: 's1', name: 'Comunicación y Lenguaje', gradeLevel: 'Prejardín' },
   { id: 's2', name: 'Exploración del Entorno', gradeLevel: 'Prejardín' },
   { id: 's3', name: 'Expresión Artística', gradeLevel: 'Prejardín' },
@@ -13,9 +12,9 @@ const DEFAULT_SUBJECTS: Subject[] = [
   { id: 's7', name: 'Comunicación y Lenguaje', gradeLevel: 'Transición' },
   { id: 's8', name: 'Pensamiento Lógico', gradeLevel: 'Transición' },
   { id: 's9', name: 'Expresión Artística', gradeLevel: 'Transición' },
-  // 1° to 5°
   ...(['1°', '2°', '3°', '4°', '5°'] as GradeLevel[]).flatMap((grade, gi) =>
-    ['Lengua Castellana', 'Matemáticas', 'Ciencias Naturales', 'Ciencias Sociales', 'Ética y Valores', 'Educación Física', 'Artística', 'Inglés'].map((name, ni) => ({
+    ['Lengua Castellana', 'Matemáticas', 'Ciencias Naturales', 'Ciencias Sociales',
+      'Ética y Valores', 'Educación Física', 'Artística', 'Inglés'].map((name, ni) => ({
       id: `sg${gi}_${ni}`,
       name,
       gradeLevel: grade,
@@ -32,11 +31,17 @@ export const loadData = (): AppData => {
       subjects: DEFAULT_SUBJECTS,
       grades: [],
       observations: [],
+      teachers: [],
+      groups: [],
     };
     saveData(initial);
     return initial;
   }
-  return JSON.parse(raw);
+  const parsed = JSON.parse(raw) as AppData;
+  // Migrate existing data that predates teachers/groups fields
+  if (!parsed.teachers) parsed.teachers = [];
+  if (!parsed.groups) parsed.groups = [];
+  return parsed;
 };
 
 export const saveData = (data: AppData): void => {
@@ -59,7 +64,7 @@ export const qualitativeToNumber = (q: QualitativeGrade): number => {
 };
 
 export const GRADE_LEVELS: GradeLevel[] = [
-  'Prejardín', 'Jardín', 'Transición', '1°', '2°', '3°', '4°', '5°'
+  'Prejardín', 'Jardín', 'Transición', '1°', '2°', '3°', '4°', '5°',
 ];
 
 export const ATTENDANCE_LABELS: Record<string, string> = {

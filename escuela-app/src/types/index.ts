@@ -8,11 +8,29 @@ export type ObservationCategory = 'académica' | 'conductual' | 'socioemocional'
 
 export type GradeType = 'quantitative' | 'qualitative';
 
+export interface Teacher {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  subjects?: string;
+  createdAt: string;
+}
+
+export interface Group {
+  id: string;
+  gradeLevel: GradeLevel;
+  label: string; // 'A', 'B', 'Único', etc.
+  teacherId: string;
+  year: number;
+}
+
 export interface Student {
   id: string;
   firstName: string;
   lastName: string;
   gradeLevel: GradeLevel;
+  groupId?: string;
   birthDate: string;
   parentName: string;
   parentPhone: string;
@@ -62,4 +80,6 @@ export interface AppData {
   subjects: Subject[];
   grades: GradeRecord[];
   observations: Observation[];
+  teachers: Teacher[];
+  groups: Group[];
 }

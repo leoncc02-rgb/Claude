@@ -7,6 +7,8 @@ import Attendance from './pages/Attendance';
 import Grades from './pages/Grades';
 import Observations from './pages/Observations';
 import Statistics from './pages/Statistics';
+import Teachers from './pages/Teachers';
+import Groups from './pages/Groups';
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
             <Route path="/valoraciones" element={<Grades />} />
             <Route path="/observaciones" element={<Observations />} />
             <Route path="/estadisticas" element={<Statistics />} />
+            <Route path="/docentes" element={<Teachers />} />
+            <Route path="/grupos" element={<Groups />} />
           </Routes>
         </Layout>
       </BrowserRouter>
