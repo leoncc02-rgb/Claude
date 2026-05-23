@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Check, X, Clock, FileText, Download, Table } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { AttendanceStatus, GradeLevel } from '../types';
@@ -17,16 +17,42 @@ const STATUS_ICONS: Record<AttendanceStatus, React.ReactNode> = {
 const STATUS_CYCLE: AttendanceStatus[] = ['present', 'absent', 'late', 'excused'];
 
 const Attendance: React.FC = () => {
-  const { data, setAttendance } = useApp();
+  const { data, setAttendance, activeTeacherId } = useApp();
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [filterGrade, setFilterGrade] = useState<GradeLevel | 'Todos'>('Todos');
+  const [filterGroup, setFilterGroup] = useState('');
+
+  // When active teacher changes, auto-select their first group
+  useEffect(() => {
+    if (activeTeacherId) {
+      const firstGroup = data.groups.find(g => g.teacherId === activeTeacherId);
+      if (firstGroup) {
+        setFilterGrade(firstGroup.gradeLevel);
+        setFilterGroup(firstGroup.id);
+      }
+    } else {
+      setFilterGroup('');
+    }
+  }, [activeTeacherId]);
 
   const dateObj = new Date(selectedDate + 'T12:00:00');
   const [showExport, setShowExport] = useState(false);
 
+  const teacherGroupIds = activeTeacherId
+    ? data.groups.filter(g => g.teacherId === activeTeacherId).map(g => g.id)
+    : null;
+
   const studentsToShow = data.students
-    .filter(s => filterGrade === 'Todos' || s.gradeLevel === filterGrade)
+    .filter(s => {
+      if (filterGroup) return s.groupId === filterGroup;
+      if (teacherGroupIds) return s.groupId !== undefined && teacherGroupIds.includes(s.groupId);
+      return filterGrade === 'Todos' || s.gradeLevel === filterGrade;
+    })
     .sort((a, b) => a.lastName.localeCompare(b.lastName));
+
+  const availableGroups = data.groups.filter(
+    g => filterGrade === 'Todos' || g.gradeLevel === filterGrade
+  );
 
   const getStatus = (studentId: string): AttendanceStatus | undefined =>
     data.attendance.find(a => a.studentId === studentId && a.date === selectedDate)?.status;
@@ -119,12 +145,24 @@ const Attendance: React.FC = () => {
           <div className="flex items-center gap-3 flex-wrap">
             <select
               value={filterGrade}
-              onChange={e => setFilterGrade(e.target.value as GradeLevel | 'Todos')}
+              onChange={e => { setFilterGrade(e.target.value as GradeLevel | 'Todos'); setFilterGroup(''); }}
               className="input-field w-auto"
             >
               <option value="Todos">Todos los grados</option>
               {GRADE_LEVELS.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
+            {availableGroups.length > 0 && (
+              <select
+                value={filterGroup}
+                onChange={e => setFilterGroup(e.target.value)}
+                className="input-field w-auto"
+              >
+                <option value="">Todos los grupos</option>
+                {availableGroups.map(g => (
+                  <option key={g.id} value={g.id}>{g.gradeLevel}{g.label}</option>
+                ))}
+              </select>
+            )}
             <button onClick={() => markAll('present')} className="btn-primary text-sm py-1.5">
               Marcar todos presentes
             </button>

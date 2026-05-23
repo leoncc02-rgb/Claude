@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, BookOpen, Download, FileText, Table } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { GradeLevel, QualitativeGrade } from '../types';
@@ -16,8 +16,15 @@ const QUAL_COLORS: Record<QualitativeGrade, string> = {
 };
 
 const Grades: React.FC = () => {
-  const { data, addGrade, deleteGrade } = useApp();
+  const { data, addGrade, deleteGrade, activeTeacherId } = useApp();
   const [filterGrade, setFilterGrade] = useState<GradeLevel>(GRADE_LEVELS[3]);
+
+  useEffect(() => {
+    if (activeTeacherId) {
+      const firstGroup = data.groups.find(g => g.teacherId === activeTeacherId);
+      if (firstGroup) setFilterGrade(firstGroup.gradeLevel);
+    }
+  }, [activeTeacherId]);
   const [filterPeriod, setFilterPeriod] = useState<1 | 2 | 3 | 4>(1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [showModal, setShowModal] = useState(false);

@@ -1,8 +1,10 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
-import type { Student, AttendanceRecord, GradeRecord, Subject, Group, Teacher } from '../types';
-import { ATTENDANCE_LABELS } from './storage';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import type { Student, AttendanceRecord, GradeRecord, Subject, Group, Teacher, Observation } from '../types';
+import { ATTENDANCE_LABELS, quantitativeToQualitative } from './storage';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -312,4 +314,162 @@ export const exportGradesExcel = async (
 
   const buf = await wb.xlsx.writeBuffer();
   saveBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `valoraciones_${gradeLevel}_p${period}_${year}.xlsx`);
+};
+
+// ─── Boletín individual ───────────────────────────────────────────────────────
+
+export const exportBoletin = (
+  student: Student,
+  grades: GradeRecord[],
+  subjects: Subject[],
+  attendance: AttendanceRecord[],
+  observations: Observation[],
+  teacher?: Teacher,
+  group?: Group,
+) => {
+  const doc = new jsPDF();
+  const currentYear = new Date().getFullYear();
+  let y = 15;
+
+  // Header
+  doc.setFillColor(37, 99, 235);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('EduControl — Boletín de Notas', 14, 12);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Año lectivo ${currentYear}`, 14, 20);
+  doc.setTextColor(0, 0, 0);
+  y = 36;
+
+  // Student info box
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(10, y, 190, 26, 3, 3, 'F');
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${student.firstName} ${student.lastName}`, 16, y + 9);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100);
+  doc.text(`Grado: ${student.gradeLevel}`, 16, y + 16);
+  if (group) doc.text(`Grupo: ${group.gradeLevel}${group.label}`, 60, y + 16);
+  if (teacher) doc.text(`Docente: ${teacher.name}`, 110, y + 16);
+  if (student.parentName) doc.text(`Acudiente: ${student.parentName}`, 16, y + 22);
+  doc.setTextColor(0);
+  y += 34;
+
+  // Grades by period
+  const periods = [1, 2, 3, 4] as const;
+  const studentGrades = grades.filter(g => g.year === currentYear);
+
+  if (studentGrades.length > 0) {
+    const usedSubjectIds = [...new Set(studentGrades.map(g => g.subjectId))];
+    const usedSubjects = subjects.filter(s => usedSubjectIds.includes(s.id));
+
+    const head = [['Materia', ...periods.map(p => `P${p}`), 'Promedio']];
+    const body = usedSubjects.map(sub => {
+      const row: string[] = [sub.name];
+      let total = 0, count = 0;
+      periods.forEach(p => {
+        const g = studentGrades.find(gr => gr.subjectId === sub.id && gr.period === p);
+        if (g) {
+          const val = g.type === 'quantitative' && g.quantitativeValue !== undefined
+            ? g.quantitativeValue.toFixed(1)
+            : (g.qualitativeValue ?? '—');
+          row.push(val);
+          if (g.type === 'quantitative' && g.quantitativeValue !== undefined) {
+            total += g.quantitativeValue;
+            count++;
+          }
+        } else {
+          row.push('—');
+        }
+      });
+      const avg = count ? (total / count).toFixed(1) : '—';
+      row.push(avg);
+      return row;
+    });
+
+    autoTable(doc, {
+      startY: y,
+      head,
+      body,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [37, 99, 235] },
+      columnStyles: { 0: { cellWidth: 70 } },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 5) {
+          const val = parseFloat(data.cell.text[0]);
+          if (!isNaN(val)) {
+            const level = quantitativeToQualitative(val);
+            if (level === 'Superior') data.cell.styles.textColor = [22, 163, 74];
+            else if (level === 'Alto') data.cell.styles.textColor = [37, 99, 235];
+            else if (level === 'Básico') data.cell.styles.textColor = [202, 138, 4];
+            else data.cell.styles.textColor = [220, 38, 38];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+    });
+
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+  }
+
+  // Attendance summary
+  const total = attendance.length;
+  const present = attendance.filter(a => a.status === 'present').length;
+  const absent = attendance.filter(a => a.status === 'absent').length;
+  const rate = total ? Math.round((present / total) * 100) : 0;
+
+  if (y > 230) { doc.addPage(); y = 15; }
+
+  doc.setFillColor(240, 253, 244);
+  doc.roundedRect(10, y, 190, 16, 3, 3, 'F');
+  doc.setFontSize(9);
+  doc.setTextColor(22, 163, 74);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ASISTENCIA:', 16, y + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60);
+  doc.text(`Tasa: ${rate}%   Presencias: ${present}   Ausencias: ${absent}   Total días registrados: ${total}`, 50, y + 6);
+  y += 22;
+
+  // Observations
+  if (observations.length > 0) {
+    if (y > 220) { doc.addPage(); y = 15; }
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0);
+    doc.text('Observaciones', 14, y);
+    y += 6;
+
+    observations.slice(0, 8).forEach(obs => {
+      if (y > 265) { doc.addPage(); y = 15; }
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(80);
+      doc.text(`${obs.date} [${obs.category}]${obs.createdBy ? ` — ${obs.createdBy}` : ''}`, 14, y);
+      y += 4;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(40);
+      const lines = doc.splitTextToSize(obs.text, 182) as string[];
+      doc.text(lines, 14, y);
+      y += lines.length * 4 + 3;
+    });
+  }
+
+  // Footer
+  const pageCount = (doc as jsPDF & { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(`EduControl — Generado el ${format(new Date(), "d 'de' MMMM, yyyy", { locale: es })}`, 14, 290);
+    doc.text(`Página ${i} de ${pageCount}`, 180, 290);
+  }
+
+  doc.save(`boletin_${student.lastName}_${student.firstName}_${currentYear}.pdf`);
 };

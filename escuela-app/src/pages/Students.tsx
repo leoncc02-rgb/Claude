@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, User, Download, FileText, Table } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Search, Edit2, Trash2, User, Download, FileText, Table, ExternalLink } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { Student, GradeLevel } from '../types';
 import { GRADE_LEVELS } from '../utils/storage';
@@ -195,6 +196,9 @@ const Students: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex gap-1">
+                            <Link to={`/estudiante/${s.id}`} className="p-1.5 hover:bg-blue-50 rounded-lg text-gray-400 hover:text-blue-600" title="Ver perfil">
+                              <ExternalLink className="w-4 h-4" />
+                            </Link>
                             <button onClick={() => openEdit(s)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600">
                               <Edit2 className="w-4 h-4" />
                             </button>

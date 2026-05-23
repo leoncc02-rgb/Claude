@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, MessageSquare, Trash2, Edit2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { Observation, ObservationCategory, GradeLevel } from '../types';
@@ -29,8 +29,17 @@ const emptyForm = {
 };
 
 const Observations: React.FC = () => {
-  const { data, addObservation, updateObservation, deleteObservation } = useApp();
+  const { data, addObservation, updateObservation, deleteObservation, activeTeacherId } = useApp();
   const [filterGrade, setFilterGrade] = useState<GradeLevel | 'Todos'>('Todos');
+
+  useEffect(() => {
+    if (activeTeacherId) {
+      const firstGroup = data.groups.find(g => g.teacherId === activeTeacherId);
+      if (firstGroup) setFilterGrade(firstGroup.gradeLevel);
+    } else {
+      setFilterGrade('Todos');
+    }
+  }, [activeTeacherId]);
   const [filterCategory, setFilterCategory] = useState<ObservationCategory | 'Todos'>('Todos');
   const [filterStudent, setFilterStudent] = useState('');
   const [showModal, setShowModal] = useState(false);

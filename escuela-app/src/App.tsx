@@ -9,6 +9,7 @@ import Observations from './pages/Observations';
 import Statistics from './pages/Statistics';
 import Teachers from './pages/Teachers';
 import Groups from './pages/Groups';
+import StudentProfile from './pages/StudentProfile';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="/estadisticas" element={<Statistics />} />
             <Route path="/docentes" element={<Teachers />} />
             <Route path="/grupos" element={<Groups />} />
+            <Route path="/estudiante/:id" element={<StudentProfile />} />
           </Routes>
         </Layout>
       </BrowserRouter>
