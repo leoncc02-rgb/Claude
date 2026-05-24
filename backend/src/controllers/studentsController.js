@@ -15,8 +15,8 @@ exports.listarEstudiantes = async (req, res) => {
 
 exports.crearEstudiante = async (req, res) => {
   try {
-    const { name, matricula, grado, seccion, email, telefono } = req.body;
-    const student = new Student({ name, matricula, grado, seccion, email, telefono, teacherId: req.userId });
+    const { name, matricula, grado, seccion, email, telefono, birthDate, parentName, parentPhone, parentEmail } = req.body;
+    const student = new Student({ name, matricula, grado, seccion, email, telefono, birthDate, parentName, parentPhone, parentEmail, teacherId: req.userId });
     await student.save();
     res.status(201).json({ success: true, message: 'Estudiante creado correctamente', student });
   } catch (error) {
@@ -52,10 +52,10 @@ exports.obtenerEstudiante = async (req, res) => {
 
 exports.actualizarEstudiante = async (req, res) => {
   try {
-    const { name, matricula, grado, seccion, email, telefono } = req.body;
+    const { name, matricula, grado, seccion, email, telefono, birthDate, parentName, parentPhone, parentEmail } = req.body;
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, teacherId: req.userId },
-      { name, matricula, grado, seccion, email, telefono },
+      { name, matricula, grado, seccion, email, telefono, birthDate, parentName, parentPhone, parentEmail },
       { new: true, runValidators: true }
     );
     if (!student) {

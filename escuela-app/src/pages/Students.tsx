@@ -27,6 +27,8 @@ const Students: React.FC = () => {
   const [form, setForm] = useState(emptyStudent);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const filtered = data.students.filter(s => {
     const matchSearch = `${s.firstName} ${s.lastName}`.toLowerCase().includes(search.toLowerCase());
@@ -60,14 +62,22 @@ const Students: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editing) {
-      updateStudent({ ...editing, ...form });
-    } else {
-      addStudent(form);
+    setSubmitError('');
+    setSubmitting(true);
+    try {
+      if (editing) {
+        await updateStudent({ ...editing, ...form });
+      } else {
+        await addStudent(form);
+      }
+      setShowModal(false);
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : 'Error al guardar');
+    } finally {
+      setSubmitting(false);
     }
-    setShowModal(false);
   };
 
   const groupsForGrade = data.groups.filter(g => g.gradeLevel === form.gradeLevel);
@@ -300,9 +310,16 @@ const Students: React.FC = () => {
                   <input type="email" className="input-field" value={form.parentEmail} onChange={e => setForm(f => ({ ...f, parentEmail: e.target.value }))} />
                 </div>
               </div>
+              {submitError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+                  {submitError}
+                </div>
+              )}
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">Cancelar</button>
-                <button type="submit" className="btn-primary flex-1">{editing ? 'Guardar cambios' : 'Agregar'}</button>
+                <button type="submit" disabled={submitting} className="btn-primary flex-1">
+                  {submitting ? 'Guardando...' : editing ? 'Guardar cambios' : 'Agregar'}
+                </button>
               </div>
             </form>
           </div>

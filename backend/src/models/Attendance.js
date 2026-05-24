@@ -15,7 +15,7 @@ const attendanceSchema = new mongoose.Schema(
     fecha: { type: Date, required: [true, 'La fecha es requerida'] },
     estado: {
       type: String,
-      enum: ['presente', 'ausente', 'tardanza'],
+      enum: ['presente', 'ausente', 'tardanza', 'excusado'],
       required: [true, 'El estado es requerido']
     },
     observacion: { type: String, trim: true, maxlength: 500 }

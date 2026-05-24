@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarCheck, BookOpen, MessageSquare,
-  BarChart3, Menu, GraduationCap, UserCog, Layers, ChevronDown,
+  BarChart3, Menu, GraduationCap, UserCog, Layers, ChevronDown, LogOut,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -24,7 +24,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const location = useLocation();
-  const { data, activeTeacherId, setActiveTeacherId } = useApp();
+  const { data, auth, logout, activeTeacherId, setActiveTeacherId } = useApp();
 
   const activeTeacher = data.teachers.find(t => t.id === activeTeacherId);
   const isAdminPath = adminItems.some(i => i.path === location.pathname);
@@ -121,7 +121,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <p className="text-sm text-blue-800 font-semibold truncate">{activeTeacher.name}</p>
           </div>
         )}
-        <div className="px-6 py-3 border-t border-gray-200">
+        <div className="px-4 py-3 border-t border-gray-200">
+          {auth && (
+            <div className="flex items-center justify-between mb-2">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-800 truncate">{auth.name}</p>
+                <p className="text-xs text-gray-400 truncate">{auth.email}</p>
+              </div>
+              <button
+                onClick={logout}
+                className="ml-2 p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500 flex-shrink-0"
+                title="Cerrar sesión"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           <p className="text-xs text-gray-400">© 2026 EduControl</p>
         </div>
       </aside>
