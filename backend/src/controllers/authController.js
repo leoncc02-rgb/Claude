@@ -36,6 +36,12 @@ exports.register = async (req, res) => {
       user: user.toPublicJSON()
     });
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: Object.values(error.errors).map((e) => e.message).join(', ')
+      });
+    }
     console.error('Error en registro:', error);
     res.status(500).json({
       success: false,
@@ -149,6 +155,12 @@ exports.updateProfile = async (req, res) => {
       user: user.toPublicJSON()
     });
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: Object.values(error.errors).map((e) => e.message).join(', ')
+      });
+    }
     console.error('Error actualizando perfil:', error);
     res.status(500).json({
       success: false,
