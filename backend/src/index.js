@@ -7,11 +7,9 @@ const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/students');
 const attendanceRoutes = require('./routes/attendance');
+const feedbackRoutes = require('./routes/feedback');
 
 const app = express();
-
-// Conectar a la base de datos
-connectDB();
 
 // Middleware de seguridad
 app.use(helmet());
@@ -21,8 +19,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Rutas
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'Servidor corriendo correctamente',
     timestamp: new Date().toISOString()
   });
@@ -32,6 +30,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
@@ -51,12 +50,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.BACKEND_PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`✅ Servidor backend corriendo en puerto ${PORT}`);
-  console.log(`📍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔐 URL: http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  connectDB();
+  const PORT = process.env.BACKEND_PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`✅ Servidor backend corriendo en puerto ${PORT}`);
+    console.log(`📍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔐 URL: http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;
