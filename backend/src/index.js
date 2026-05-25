@@ -1,12 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const morgan = require('morgan');
 require('dotenv').config();
 
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth');
+const courseRoutes = require('./routes/courses');
 const studentRoutes = require('./routes/students');
+const evaluationRoutes = require('./routes/evaluations');
+const gradeRoutes = require('./routes/grades');
 const attendanceRoutes = require('./routes/attendance');
+const observationRoutes = require('./routes/observations');
 
 const app = express();
 
@@ -15,14 +20,20 @@ connectDB();
 
 // Middleware de seguridad
 app.use(helmet());
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+}
 
 // Rutas
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'Servidor corriendo correctamente',
     timestamp: new Date().toISOString()
   });
@@ -30,8 +41,12 @@ app.get('/api/health', (req, res) => {
 
 // Rutas de API
 app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/evaluations', evaluationRoutes);
+app.use('/api/grades', gradeRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/observations', observationRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
